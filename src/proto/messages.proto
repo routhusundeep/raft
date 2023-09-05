@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+enum MessageType {
+  EMPTY = 0;
+  Terminate = 1;
+}
+
+message WireMessage {
+  ProcessId to = 1;
+  ProcessId from = 2;
+  Message message = 3;
+}
+
+message Message { MessageType type = 1; }
+
+message ProcessId {
+  oneof ip {
+    fixed32 v4 = 1;
+    string v6 = 2;
+  }
+  uint32 port = 3;
+  uint32 id = 4;
+}
