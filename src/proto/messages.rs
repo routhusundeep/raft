@@ -192,6 +192,22 @@ pub struct Message {
     // message fields
     // @@protoc_insertion_point(field:Message.type)
     pub type_: ::protobuf::EnumOrUnknown<MessageType>,
+    // @@protoc_insertion_point(field:Message.term)
+    pub term: u64,
+    // @@protoc_insertion_point(field:Message.prevIndex)
+    pub prevIndex: u64,
+    // @@protoc_insertion_point(field:Message.prevTerm)
+    pub prevTerm: u64,
+    // @@protoc_insertion_point(field:Message.entries)
+    pub entries: ::std::vec::Vec<Entry>,
+    // @@protoc_insertion_point(field:Message.commitIndex)
+    pub commitIndex: u64,
+    // @@protoc_insertion_point(field:Message.success)
+    pub success: bool,
+    // @@protoc_insertion_point(field:Message.command)
+    pub command: ::std::vec::Vec<u8>,
+    // @@protoc_insertion_point(field:Message.client)
+    pub client: ::protobuf::MessageField<ProcessId>,
     // special fields
     // @@protoc_insertion_point(special_field:Message.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -209,12 +225,52 @@ impl Message {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(1);
+        let mut fields = ::std::vec::Vec::with_capacity(9);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
             "type",
             |m: &Message| { &m.type_ },
             |m: &mut Message| { &mut m.type_ },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "term",
+            |m: &Message| { &m.term },
+            |m: &mut Message| { &mut m.term },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "prevIndex",
+            |m: &Message| { &m.prevIndex },
+            |m: &mut Message| { &mut m.prevIndex },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "prevTerm",
+            |m: &Message| { &m.prevTerm },
+            |m: &mut Message| { &mut m.prevTerm },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
+            "entries",
+            |m: &Message| { &m.entries },
+            |m: &mut Message| { &mut m.entries },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "commitIndex",
+            |m: &Message| { &m.commitIndex },
+            |m: &mut Message| { &mut m.commitIndex },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "success",
+            |m: &Message| { &m.success },
+            |m: &mut Message| { &mut m.success },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "command",
+            |m: &Message| { &m.command },
+            |m: &mut Message| { &mut m.command },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_message_field_accessor::<_, ProcessId>(
+            "client",
+            |m: &Message| { &m.client },
+            |m: &mut Message| { &mut m.client },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<Message>(
             "Message",
@@ -237,6 +293,30 @@ impl ::protobuf::Message for Message {
                 8 => {
                     self.type_ = is.read_enum_or_unknown()?;
                 },
+                16 => {
+                    self.term = is.read_uint64()?;
+                },
+                24 => {
+                    self.prevIndex = is.read_uint64()?;
+                },
+                32 => {
+                    self.prevTerm = is.read_uint64()?;
+                },
+                42 => {
+                    self.entries.push(is.read_message()?);
+                },
+                48 => {
+                    self.commitIndex = is.read_uint64()?;
+                },
+                56 => {
+                    self.success = is.read_bool()?;
+                },
+                66 => {
+                    self.command = is.read_bytes()?;
+                },
+                74 => {
+                    ::protobuf::rt::read_singular_message_into_field(is, &mut self.client)?;
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -249,8 +329,34 @@ impl ::protobuf::Message for Message {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u64 {
         let mut my_size = 0;
-        if self.type_ != ::protobuf::EnumOrUnknown::new(MessageType::EMPTY) {
+        if self.type_ != ::protobuf::EnumOrUnknown::new(MessageType::Empty) {
             my_size += ::protobuf::rt::int32_size(1, self.type_.value());
+        }
+        if self.term != 0 {
+            my_size += ::protobuf::rt::uint64_size(2, self.term);
+        }
+        if self.prevIndex != 0 {
+            my_size += ::protobuf::rt::uint64_size(3, self.prevIndex);
+        }
+        if self.prevTerm != 0 {
+            my_size += ::protobuf::rt::uint64_size(4, self.prevTerm);
+        }
+        for value in &self.entries {
+            let len = value.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
+        };
+        if self.commitIndex != 0 {
+            my_size += ::protobuf::rt::uint64_size(6, self.commitIndex);
+        }
+        if self.success != false {
+            my_size += 1 + 1;
+        }
+        if !self.command.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(8, &self.command);
+        }
+        if let Some(v) = self.client.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint64_size(len) + len;
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
@@ -258,8 +364,32 @@ impl ::protobuf::Message for Message {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if self.type_ != ::protobuf::EnumOrUnknown::new(MessageType::EMPTY) {
+        if self.type_ != ::protobuf::EnumOrUnknown::new(MessageType::Empty) {
             os.write_enum(1, ::protobuf::EnumOrUnknown::value(&self.type_))?;
+        }
+        if self.term != 0 {
+            os.write_uint64(2, self.term)?;
+        }
+        if self.prevIndex != 0 {
+            os.write_uint64(3, self.prevIndex)?;
+        }
+        if self.prevTerm != 0 {
+            os.write_uint64(4, self.prevTerm)?;
+        }
+        for v in &self.entries {
+            ::protobuf::rt::write_message_field_with_cached_size(5, v, os)?;
+        };
+        if self.commitIndex != 0 {
+            os.write_uint64(6, self.commitIndex)?;
+        }
+        if self.success != false {
+            os.write_bool(7, self.success)?;
+        }
+        if !self.command.is_empty() {
+            os.write_bytes(8, &self.command)?;
+        }
+        if let Some(v) = self.client.as_ref() {
+            ::protobuf::rt::write_message_field_with_cached_size(9, v, os)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -278,13 +408,29 @@ impl ::protobuf::Message for Message {
     }
 
     fn clear(&mut self) {
-        self.type_ = ::protobuf::EnumOrUnknown::new(MessageType::EMPTY);
+        self.type_ = ::protobuf::EnumOrUnknown::new(MessageType::Empty);
+        self.term = 0;
+        self.prevIndex = 0;
+        self.prevTerm = 0;
+        self.entries.clear();
+        self.commitIndex = 0;
+        self.success = false;
+        self.command.clear();
+        self.client.clear();
         self.special_fields.clear();
     }
 
     fn default_instance() -> &'static Message {
         static instance: Message = Message {
             type_: ::protobuf::EnumOrUnknown::from_i32(0),
+            term: 0,
+            prevIndex: 0,
+            prevTerm: 0,
+            entries: ::std::vec::Vec::new(),
+            commitIndex: 0,
+            success: false,
+            command: ::std::vec::Vec::new(),
+            client: ::protobuf::MessageField::none(),
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -596,13 +742,199 @@ pub mod process_id {
     }
 }
 
+#[derive(PartialEq,Clone,Default,Debug)]
+// @@protoc_insertion_point(message:Entry)
+pub struct Entry {
+    // message fields
+    // @@protoc_insertion_point(field:Entry.type)
+    pub type_: ::protobuf::EnumOrUnknown<EntryType>,
+    // @@protoc_insertion_point(field:Entry.term)
+    pub term: u64,
+    // @@protoc_insertion_point(field:Entry.index)
+    pub index: u64,
+    // @@protoc_insertion_point(field:Entry.bytes)
+    pub bytes: ::std::vec::Vec<u8>,
+    // special fields
+    // @@protoc_insertion_point(special_field:Entry.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a Entry {
+    fn default() -> &'a Entry {
+        <Entry as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl Entry {
+    pub fn new() -> Entry {
+        ::std::default::Default::default()
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(4);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "type",
+            |m: &Entry| { &m.type_ },
+            |m: &mut Entry| { &mut m.type_ },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "term",
+            |m: &Entry| { &m.term },
+            |m: &mut Entry| { &mut m.term },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "index",
+            |m: &Entry| { &m.index },
+            |m: &mut Entry| { &mut m.index },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_simpler_field_accessor::<_, _>(
+            "bytes",
+            |m: &Entry| { &m.bytes },
+            |m: &mut Entry| { &mut m.bytes },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<Entry>(
+            "Entry",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for Entry {
+    const NAME: &'static str = "Entry";
+
+    fn is_initialized(&self) -> bool {
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                8 => {
+                    self.type_ = is.read_enum_or_unknown()?;
+                },
+                16 => {
+                    self.term = is.read_uint64()?;
+                },
+                24 => {
+                    self.index = is.read_uint64()?;
+                },
+                34 => {
+                    self.bytes = is.read_bytes()?;
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if self.type_ != ::protobuf::EnumOrUnknown::new(EntryType::Normal) {
+            my_size += ::protobuf::rt::int32_size(1, self.type_.value());
+        }
+        if self.term != 0 {
+            my_size += ::protobuf::rt::uint64_size(2, self.term);
+        }
+        if self.index != 0 {
+            my_size += ::protobuf::rt::uint64_size(3, self.index);
+        }
+        if !self.bytes.is_empty() {
+            my_size += ::protobuf::rt::bytes_size(4, &self.bytes);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if self.type_ != ::protobuf::EnumOrUnknown::new(EntryType::Normal) {
+            os.write_enum(1, ::protobuf::EnumOrUnknown::value(&self.type_))?;
+        }
+        if self.term != 0 {
+            os.write_uint64(2, self.term)?;
+        }
+        if self.index != 0 {
+            os.write_uint64(3, self.index)?;
+        }
+        if !self.bytes.is_empty() {
+            os.write_bytes(4, &self.bytes)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> Entry {
+        Entry::new()
+    }
+
+    fn clear(&mut self) {
+        self.type_ = ::protobuf::EnumOrUnknown::new(EntryType::Normal);
+        self.term = 0;
+        self.index = 0;
+        self.bytes.clear();
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static Entry {
+        static instance: Entry = Entry {
+            type_: ::protobuf::EnumOrUnknown::from_i32(0),
+            term: 0,
+            index: 0,
+            bytes: ::std::vec::Vec::new(),
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for Entry {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("Entry").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for Entry {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for Entry {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
 #[derive(Clone,Copy,PartialEq,Eq,Debug,Hash)]
 // @@protoc_insertion_point(enum:MessageType)
 pub enum MessageType {
-    // @@protoc_insertion_point(enum_value:MessageType.EMPTY)
-    EMPTY = 0,
+    // @@protoc_insertion_point(enum_value:MessageType.Empty)
+    Empty = 0,
     // @@protoc_insertion_point(enum_value:MessageType.Terminate)
     Terminate = 1,
+    // @@protoc_insertion_point(enum_value:MessageType.AppendEntries)
+    AppendEntries = 2,
+    // @@protoc_insertion_point(enum_value:MessageType.AppendEntriesResponse)
+    AppendEntriesResponse = 3,
+    // @@protoc_insertion_point(enum_value:MessageType.RequestVote)
+    RequestVote = 4,
+    // @@protoc_insertion_point(enum_value:MessageType.RequestVoteResponse)
+    RequestVoteResponse = 5,
+    // @@protoc_insertion_point(enum_value:MessageType.Command)
+    Command = 6,
 }
 
 impl ::protobuf::Enum for MessageType {
@@ -614,15 +946,25 @@ impl ::protobuf::Enum for MessageType {
 
     fn from_i32(value: i32) -> ::std::option::Option<MessageType> {
         match value {
-            0 => ::std::option::Option::Some(MessageType::EMPTY),
+            0 => ::std::option::Option::Some(MessageType::Empty),
             1 => ::std::option::Option::Some(MessageType::Terminate),
+            2 => ::std::option::Option::Some(MessageType::AppendEntries),
+            3 => ::std::option::Option::Some(MessageType::AppendEntriesResponse),
+            4 => ::std::option::Option::Some(MessageType::RequestVote),
+            5 => ::std::option::Option::Some(MessageType::RequestVoteResponse),
+            6 => ::std::option::Option::Some(MessageType::Command),
             _ => ::std::option::Option::None
         }
     }
 
     const VALUES: &'static [MessageType] = &[
-        MessageType::EMPTY,
+        MessageType::Empty,
         MessageType::Terminate,
+        MessageType::AppendEntries,
+        MessageType::AppendEntriesResponse,
+        MessageType::RequestVote,
+        MessageType::RequestVoteResponse,
+        MessageType::Command,
     ];
 }
 
@@ -640,7 +982,7 @@ impl ::protobuf::EnumFull for MessageType {
 
 impl ::std::default::Default for MessageType {
     fn default() -> Self {
-        MessageType::EMPTY
+        MessageType::Empty
     }
 }
 
@@ -650,48 +992,160 @@ impl MessageType {
     }
 }
 
+#[derive(Clone,Copy,PartialEq,Eq,Debug,Hash)]
+// @@protoc_insertion_point(enum:EntryType)
+pub enum EntryType {
+    // @@protoc_insertion_point(enum_value:EntryType.Normal)
+    Normal = 0,
+}
+
+impl ::protobuf::Enum for EntryType {
+    const NAME: &'static str = "EntryType";
+
+    fn value(&self) -> i32 {
+        *self as i32
+    }
+
+    fn from_i32(value: i32) -> ::std::option::Option<EntryType> {
+        match value {
+            0 => ::std::option::Option::Some(EntryType::Normal),
+            _ => ::std::option::Option::None
+        }
+    }
+
+    const VALUES: &'static [EntryType] = &[
+        EntryType::Normal,
+    ];
+}
+
+impl ::protobuf::EnumFull for EntryType {
+    fn enum_descriptor() -> ::protobuf::reflect::EnumDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::EnumDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().enum_by_package_relative_name("EntryType").unwrap()).clone()
+    }
+
+    fn descriptor(&self) -> ::protobuf::reflect::EnumValueDescriptor {
+        let index = *self as usize;
+        Self::enum_descriptor().value_by_index(index)
+    }
+}
+
+impl ::std::default::Default for EntryType {
+    fn default() -> Self {
+        EntryType::Normal
+    }
+}
+
+impl EntryType {
+    fn generated_enum_descriptor_data() -> ::protobuf::reflect::GeneratedEnumDescriptorData {
+        ::protobuf::reflect::GeneratedEnumDescriptorData::new::<EntryType>("EntryType")
+    }
+}
+
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\x0emessages.proto\"m\n\x0bWireMessage\x12\x1a\n\x02to\x18\x01\x20\x01\
     (\x0b2\n.ProcessIdR\x02to\x12\x1e\n\x04from\x18\x02\x20\x01(\x0b2\n.Proc\
     essIdR\x04from\x12\"\n\x07message\x18\x03\x20\x01(\x0b2\x08.MessageR\x07\
-    message\"+\n\x07Message\x12\x20\n\x04type\x18\x01\x20\x01(\x0e2\x0c.Mess\
-    ageTypeR\x04type\"Y\n\tProcessId\x12\x10\n\x02v4\x18\x01\x20\x01(\x07H\0\
-    R\x02v4\x12\x10\n\x02v6\x18\x02\x20\x01(\tH\0R\x02v6\x12\x12\n\x04port\
-    \x18\x03\x20\x01(\rR\x04port\x12\x0e\n\x02id\x18\x04\x20\x01(\rR\x02idB\
-    \x04\n\x02ip*'\n\x0bMessageType\x12\t\n\x05EMPTY\x10\0\x12\r\n\tTerminat\
-    e\x10\x01J\x97\x05\n\x06\x12\x04\0\0\x16\x01\n\x08\n\x01\x0c\x12\x03\0\0\
-    \x12\n\n\n\x02\x05\0\x12\x04\x02\0\x05\x01\n\n\n\x03\x05\0\x01\x12\x03\
-    \x02\x05\x10\n\x0b\n\x04\x05\0\x02\0\x12\x03\x03\x02\x0c\n\x0c\n\x05\x05\
-    \0\x02\0\x01\x12\x03\x03\x02\x07\n\x0c\n\x05\x05\0\x02\0\x02\x12\x03\x03\
-    \n\x0b\n\x0b\n\x04\x05\0\x02\x01\x12\x03\x04\x02\x10\n\x0c\n\x05\x05\0\
-    \x02\x01\x01\x12\x03\x04\x02\x0b\n\x0c\n\x05\x05\0\x02\x01\x02\x12\x03\
-    \x04\x0e\x0f\n\n\n\x02\x04\0\x12\x04\x07\0\x0b\x01\n\n\n\x03\x04\0\x01\
-    \x12\x03\x07\x08\x13\n\x0b\n\x04\x04\0\x02\0\x12\x03\x08\x02\x13\n\x0c\n\
-    \x05\x04\0\x02\0\x06\x12\x03\x08\x02\x0b\n\x0c\n\x05\x04\0\x02\0\x01\x12\
-    \x03\x08\x0c\x0e\n\x0c\n\x05\x04\0\x02\0\x03\x12\x03\x08\x11\x12\n\x0b\n\
-    \x04\x04\0\x02\x01\x12\x03\t\x02\x15\n\x0c\n\x05\x04\0\x02\x01\x06\x12\
-    \x03\t\x02\x0b\n\x0c\n\x05\x04\0\x02\x01\x01\x12\x03\t\x0c\x10\n\x0c\n\
-    \x05\x04\0\x02\x01\x03\x12\x03\t\x13\x14\n\x0b\n\x04\x04\0\x02\x02\x12\
-    \x03\n\x02\x16\n\x0c\n\x05\x04\0\x02\x02\x06\x12\x03\n\x02\t\n\x0c\n\x05\
-    \x04\0\x02\x02\x01\x12\x03\n\n\x11\n\x0c\n\x05\x04\0\x02\x02\x03\x12\x03\
-    \n\x14\x15\n\t\n\x02\x04\x01\x12\x03\r\0)\n\n\n\x03\x04\x01\x01\x12\x03\
-    \r\x08\x0f\n\x0b\n\x04\x04\x01\x02\0\x12\x03\r\x12'\n\x0c\n\x05\x04\x01\
-    \x02\0\x06\x12\x03\r\x12\x1d\n\x0c\n\x05\x04\x01\x02\0\x01\x12\x03\r\x1e\
-    \"\n\x0c\n\x05\x04\x01\x02\0\x03\x12\x03\r%&\n\n\n\x02\x04\x02\x12\x04\
-    \x0f\0\x16\x01\n\n\n\x03\x04\x02\x01\x12\x03\x0f\x08\x11\n\x0c\n\x04\x04\
-    \x02\x08\0\x12\x04\x10\x02\x13\x03\n\x0c\n\x05\x04\x02\x08\0\x01\x12\x03\
-    \x10\x08\n\n\x0b\n\x04\x04\x02\x02\0\x12\x03\x11\x04\x13\n\x0c\n\x05\x04\
-    \x02\x02\0\x05\x12\x03\x11\x04\x0b\n\x0c\n\x05\x04\x02\x02\0\x01\x12\x03\
-    \x11\x0c\x0e\n\x0c\n\x05\x04\x02\x02\0\x03\x12\x03\x11\x11\x12\n\x0b\n\
-    \x04\x04\x02\x02\x01\x12\x03\x12\x04\x12\n\x0c\n\x05\x04\x02\x02\x01\x05\
-    \x12\x03\x12\x04\n\n\x0c\n\x05\x04\x02\x02\x01\x01\x12\x03\x12\x0b\r\n\
-    \x0c\n\x05\x04\x02\x02\x01\x03\x12\x03\x12\x10\x11\n\x0b\n\x04\x04\x02\
-    \x02\x02\x12\x03\x14\x02\x12\n\x0c\n\x05\x04\x02\x02\x02\x05\x12\x03\x14\
-    \x02\x08\n\x0c\n\x05\x04\x02\x02\x02\x01\x12\x03\x14\t\r\n\x0c\n\x05\x04\
-    \x02\x02\x02\x03\x12\x03\x14\x10\x11\n\x0b\n\x04\x04\x02\x02\x03\x12\x03\
-    \x15\x02\x10\n\x0c\n\x05\x04\x02\x02\x03\x05\x12\x03\x15\x02\x08\n\x0c\n\
-    \x05\x04\x02\x02\x03\x01\x12\x03\x15\t\x0b\n\x0c\n\x05\x04\x02\x02\x03\
-    \x03\x12\x03\x15\x0e\x0fb\x06proto3\
+    message\"\x95\x02\n\x07Message\x12\x20\n\x04type\x18\x01\x20\x01(\x0e2\
+    \x0c.MessageTypeR\x04type\x12\x12\n\x04term\x18\x02\x20\x01(\x04R\x04ter\
+    m\x12\x1c\n\tprevIndex\x18\x03\x20\x01(\x04R\tprevIndex\x12\x1a\n\x08pre\
+    vTerm\x18\x04\x20\x01(\x04R\x08prevTerm\x12\x20\n\x07entries\x18\x05\x20\
+    \x03(\x0b2\x06.EntryR\x07entries\x12\x20\n\x0bcommitIndex\x18\x06\x20\
+    \x01(\x04R\x0bcommitIndex\x12\x18\n\x07success\x18\x07\x20\x01(\x08R\x07\
+    success\x12\x18\n\x07command\x18\x08\x20\x01(\x0cR\x07command\x12\"\n\
+    \x06client\x18\t\x20\x01(\x0b2\n.ProcessIdR\x06client\"Y\n\tProcessId\
+    \x12\x10\n\x02v4\x18\x01\x20\x01(\x07H\0R\x02v4\x12\x10\n\x02v6\x18\x02\
+    \x20\x01(\tH\0R\x02v6\x12\x12\n\x04port\x18\x03\x20\x01(\rR\x04port\x12\
+    \x0e\n\x02id\x18\x04\x20\x01(\rR\x02idB\x04\n\x02ip\"g\n\x05Entry\x12\
+    \x1e\n\x04type\x18\x01\x20\x01(\x0e2\n.EntryTypeR\x04type\x12\x12\n\x04t\
+    erm\x18\x02\x20\x01(\x04R\x04term\x12\x14\n\x05index\x18\x03\x20\x01(\
+    \x04R\x05index\x12\x14\n\x05bytes\x18\x04\x20\x01(\x0cR\x05bytes*\x8c\
+    \x01\n\x0bMessageType\x12\t\n\x05Empty\x10\0\x12\r\n\tTerminate\x10\x01\
+    \x12\x11\n\rAppendEntries\x10\x02\x12\x19\n\x15AppendEntriesResponse\x10\
+    \x03\x12\x0f\n\x0bRequestVote\x10\x04\x12\x17\n\x13RequestVoteResponse\
+    \x10\x05\x12\x0b\n\x07Command\x10\x06*\x17\n\tEntryType\x12\n\n\x06Norma\
+    l\x10\0J\x84\r\n\x06\x12\x04\0\00\x01\n\x08\n\x01\x0c\x12\x03\0\0\x12\n\
+    \n\n\x02\x05\0\x12\x04\x02\0\n\x01\n\n\n\x03\x05\0\x01\x12\x03\x02\x05\
+    \x10\n\x0b\n\x04\x05\0\x02\0\x12\x03\x03\x02\x0c\n\x0c\n\x05\x05\0\x02\0\
+    \x01\x12\x03\x03\x02\x07\n\x0c\n\x05\x05\0\x02\0\x02\x12\x03\x03\n\x0b\n\
+    \x0b\n\x04\x05\0\x02\x01\x12\x03\x04\x02\x10\n\x0c\n\x05\x05\0\x02\x01\
+    \x01\x12\x03\x04\x02\x0b\n\x0c\n\x05\x05\0\x02\x01\x02\x12\x03\x04\x0e\
+    \x0f\n\x0b\n\x04\x05\0\x02\x02\x12\x03\x05\x02\x14\n\x0c\n\x05\x05\0\x02\
+    \x02\x01\x12\x03\x05\x02\x0f\n\x0c\n\x05\x05\0\x02\x02\x02\x12\x03\x05\
+    \x12\x13\n\x0b\n\x04\x05\0\x02\x03\x12\x03\x06\x02\x1c\n\x0c\n\x05\x05\0\
+    \x02\x03\x01\x12\x03\x06\x02\x17\n\x0c\n\x05\x05\0\x02\x03\x02\x12\x03\
+    \x06\x1a\x1b\n\x0b\n\x04\x05\0\x02\x04\x12\x03\x07\x02\x12\n\x0c\n\x05\
+    \x05\0\x02\x04\x01\x12\x03\x07\x02\r\n\x0c\n\x05\x05\0\x02\x04\x02\x12\
+    \x03\x07\x10\x11\n\x0b\n\x04\x05\0\x02\x05\x12\x03\x08\x02\x1a\n\x0c\n\
+    \x05\x05\0\x02\x05\x01\x12\x03\x08\x02\x15\n\x0c\n\x05\x05\0\x02\x05\x02\
+    \x12\x03\x08\x18\x19\n\x0b\n\x04\x05\0\x02\x06\x12\x03\t\x02\x0e\n\x0c\n\
+    \x05\x05\0\x02\x06\x01\x12\x03\t\x02\t\n\x0c\n\x05\x05\0\x02\x06\x02\x12\
+    \x03\t\x0c\r\n\n\n\x02\x04\0\x12\x04\x0c\0\x10\x01\n\n\n\x03\x04\0\x01\
+    \x12\x03\x0c\x08\x13\n\x0b\n\x04\x04\0\x02\0\x12\x03\r\x02\x13\n\x0c\n\
+    \x05\x04\0\x02\0\x06\x12\x03\r\x02\x0b\n\x0c\n\x05\x04\0\x02\0\x01\x12\
+    \x03\r\x0c\x0e\n\x0c\n\x05\x04\0\x02\0\x03\x12\x03\r\x11\x12\n\x0b\n\x04\
+    \x04\0\x02\x01\x12\x03\x0e\x02\x15\n\x0c\n\x05\x04\0\x02\x01\x06\x12\x03\
+    \x0e\x02\x0b\n\x0c\n\x05\x04\0\x02\x01\x01\x12\x03\x0e\x0c\x10\n\x0c\n\
+    \x05\x04\0\x02\x01\x03\x12\x03\x0e\x13\x14\n\x0b\n\x04\x04\0\x02\x02\x12\
+    \x03\x0f\x02\x16\n\x0c\n\x05\x04\0\x02\x02\x06\x12\x03\x0f\x02\t\n\x0c\n\
+    \x05\x04\0\x02\x02\x01\x12\x03\x0f\n\x11\n\x0c\n\x05\x04\0\x02\x02\x03\
+    \x12\x03\x0f\x14\x15\n\n\n\x02\x04\x01\x12\x04\x12\0\x1c\x01\n\n\n\x03\
+    \x04\x01\x01\x12\x03\x12\x08\x0f\n\x0b\n\x04\x04\x01\x02\0\x12\x03\x13\
+    \x02\x17\n\x0c\n\x05\x04\x01\x02\0\x06\x12\x03\x13\x02\r\n\x0c\n\x05\x04\
+    \x01\x02\0\x01\x12\x03\x13\x0e\x12\n\x0c\n\x05\x04\x01\x02\0\x03\x12\x03\
+    \x13\x15\x16\n\x0b\n\x04\x04\x01\x02\x01\x12\x03\x14\x02\x12\n\x0c\n\x05\
+    \x04\x01\x02\x01\x05\x12\x03\x14\x02\x08\n\x0c\n\x05\x04\x01\x02\x01\x01\
+    \x12\x03\x14\t\r\n\x0c\n\x05\x04\x01\x02\x01\x03\x12\x03\x14\x10\x11\n\
+    \x0b\n\x04\x04\x01\x02\x02\x12\x03\x15\x02\x17\n\x0c\n\x05\x04\x01\x02\
+    \x02\x05\x12\x03\x15\x02\x08\n\x0c\n\x05\x04\x01\x02\x02\x01\x12\x03\x15\
+    \t\x12\n\x0c\n\x05\x04\x01\x02\x02\x03\x12\x03\x15\x15\x16\n\x0b\n\x04\
+    \x04\x01\x02\x03\x12\x03\x16\x02\x16\n\x0c\n\x05\x04\x01\x02\x03\x05\x12\
+    \x03\x16\x02\x08\n\x0c\n\x05\x04\x01\x02\x03\x01\x12\x03\x16\t\x11\n\x0c\
+    \n\x05\x04\x01\x02\x03\x03\x12\x03\x16\x14\x15\n\x0b\n\x04\x04\x01\x02\
+    \x04\x12\x03\x17\x02\x1d\n\x0c\n\x05\x04\x01\x02\x04\x04\x12\x03\x17\x02\
+    \n\n\x0c\n\x05\x04\x01\x02\x04\x06\x12\x03\x17\x0b\x10\n\x0c\n\x05\x04\
+    \x01\x02\x04\x01\x12\x03\x17\x11\x18\n\x0c\n\x05\x04\x01\x02\x04\x03\x12\
+    \x03\x17\x1b\x1c\n\x0b\n\x04\x04\x01\x02\x05\x12\x03\x18\x02\x19\n\x0c\n\
+    \x05\x04\x01\x02\x05\x05\x12\x03\x18\x02\x08\n\x0c\n\x05\x04\x01\x02\x05\
+    \x01\x12\x03\x18\t\x14\n\x0c\n\x05\x04\x01\x02\x05\x03\x12\x03\x18\x17\
+    \x18\n/\n\x04\x04\x01\x02\x06\x12\x03\x19\x02\x13\"\"\x20used\x20for\x20\
+    voted\x20or\x20append\x20success\n\n\x0c\n\x05\x04\x01\x02\x06\x05\x12\
+    \x03\x19\x02\x06\n\x0c\n\x05\x04\x01\x02\x06\x01\x12\x03\x19\x07\x0e\n\
+    \x0c\n\x05\x04\x01\x02\x06\x03\x12\x03\x19\x11\x12\n\x0b\n\x04\x04\x01\
+    \x02\x07\x12\x03\x1a\x02\x14\n\x0c\n\x05\x04\x01\x02\x07\x05\x12\x03\x1a\
+    \x02\x07\n\x0c\n\x05\x04\x01\x02\x07\x01\x12\x03\x1a\x08\x0f\n\x0c\n\x05\
+    \x04\x01\x02\x07\x03\x12\x03\x1a\x12\x13\n\x0b\n\x04\x04\x01\x02\x08\x12\
+    \x03\x1b\x02\x17\n\x0c\n\x05\x04\x01\x02\x08\x06\x12\x03\x1b\x02\x0b\n\
+    \x0c\n\x05\x04\x01\x02\x08\x01\x12\x03\x1b\x0c\x12\n\x0c\n\x05\x04\x01\
+    \x02\x08\x03\x12\x03\x1b\x15\x16\n\n\n\x02\x04\x02\x12\x04\x1e\0%\x01\n\
+    \n\n\x03\x04\x02\x01\x12\x03\x1e\x08\x11\n\x0c\n\x04\x04\x02\x08\0\x12\
+    \x04\x1f\x02\"\x03\n\x0c\n\x05\x04\x02\x08\0\x01\x12\x03\x1f\x08\n\n\x0b\
+    \n\x04\x04\x02\x02\0\x12\x03\x20\x04\x13\n\x0c\n\x05\x04\x02\x02\0\x05\
+    \x12\x03\x20\x04\x0b\n\x0c\n\x05\x04\x02\x02\0\x01\x12\x03\x20\x0c\x0e\n\
+    \x0c\n\x05\x04\x02\x02\0\x03\x12\x03\x20\x11\x12\n\x0b\n\x04\x04\x02\x02\
+    \x01\x12\x03!\x04\x12\n\x0c\n\x05\x04\x02\x02\x01\x05\x12\x03!\x04\n\n\
+    \x0c\n\x05\x04\x02\x02\x01\x01\x12\x03!\x0b\r\n\x0c\n\x05\x04\x02\x02\
+    \x01\x03\x12\x03!\x10\x11\n\x0b\n\x04\x04\x02\x02\x02\x12\x03#\x02\x12\n\
+    \x0c\n\x05\x04\x02\x02\x02\x05\x12\x03#\x02\x08\n\x0c\n\x05\x04\x02\x02\
+    \x02\x01\x12\x03#\t\r\n\x0c\n\x05\x04\x02\x02\x02\x03\x12\x03#\x10\x11\n\
+    \x0b\n\x04\x04\x02\x02\x03\x12\x03$\x02\x10\n\x0c\n\x05\x04\x02\x02\x03\
+    \x05\x12\x03$\x02\x08\n\x0c\n\x05\x04\x02\x02\x03\x01\x12\x03$\t\x0b\n\
+    \x0c\n\x05\x04\x02\x02\x03\x03\x12\x03$\x0e\x0f\n\n\n\x02\x05\x01\x12\
+    \x04'\0)\x01\n\n\n\x03\x05\x01\x01\x12\x03'\x05\x0e\n\x0b\n\x04\x05\x01\
+    \x02\0\x12\x03(\x02\r\n\x0c\n\x05\x05\x01\x02\0\x01\x12\x03(\x02\x08\n\
+    \x0c\n\x05\x05\x01\x02\0\x02\x12\x03(\x0b\x0c\n\n\n\x02\x04\x03\x12\x04+\
+    \00\x01\n\n\n\x03\x04\x03\x01\x12\x03+\x08\r\n\x0b\n\x04\x04\x03\x02\0\
+    \x12\x03,\x02\x15\n\x0c\n\x05\x04\x03\x02\0\x06\x12\x03,\x02\x0b\n\x0c\n\
+    \x05\x04\x03\x02\0\x01\x12\x03,\x0c\x10\n\x0c\n\x05\x04\x03\x02\0\x03\
+    \x12\x03,\x13\x14\n\x0b\n\x04\x04\x03\x02\x01\x12\x03-\x02\x12\n\x0c\n\
+    \x05\x04\x03\x02\x01\x05\x12\x03-\x02\x08\n\x0c\n\x05\x04\x03\x02\x01\
+    \x01\x12\x03-\t\r\n\x0c\n\x05\x04\x03\x02\x01\x03\x12\x03-\x10\x11\n\x0b\
+    \n\x04\x04\x03\x02\x02\x12\x03.\x02\x13\n\x0c\n\x05\x04\x03\x02\x02\x05\
+    \x12\x03.\x02\x08\n\x0c\n\x05\x04\x03\x02\x02\x01\x12\x03.\t\x0e\n\x0c\n\
+    \x05\x04\x03\x02\x02\x03\x12\x03.\x11\x12\n\x0b\n\x04\x04\x03\x02\x03\
+    \x12\x03/\x02\x12\n\x0c\n\x05\x04\x03\x02\x03\x05\x12\x03/\x02\x07\n\x0c\
+    \n\x05\x04\x03\x02\x03\x01\x12\x03/\x08\r\n\x0c\n\x05\x04\x03\x02\x03\
+    \x03\x12\x03/\x10\x11b\x06proto3\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -709,12 +1163,14 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
     file_descriptor.get(|| {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(0);
-            let mut messages = ::std::vec::Vec::with_capacity(3);
+            let mut messages = ::std::vec::Vec::with_capacity(4);
             messages.push(WireMessage::generated_message_descriptor_data());
             messages.push(Message::generated_message_descriptor_data());
             messages.push(ProcessId::generated_message_descriptor_data());
-            let mut enums = ::std::vec::Vec::with_capacity(1);
+            messages.push(Entry::generated_message_descriptor_data());
+            let mut enums = ::std::vec::Vec::with_capacity(2);
             enums.push(MessageType::generated_enum_descriptor_data());
+            enums.push(EntryType::generated_enum_descriptor_data());
             ::protobuf::reflect::GeneratedFileDescriptor::new_generated(
                 file_descriptor_proto(),
                 deps,

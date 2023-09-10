@@ -1,7 +1,5 @@
 use std::{fmt::Display, net::IpAddr};
 
-use crate::consts::PORT;
-
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Clone, Debug)]
 pub struct ProcessId {
     pub ip: IpAddr,
@@ -37,4 +35,13 @@ impl ProcessId {
 
 pub struct Cluster {
     all: Vec<ProcessId>,
+}
+impl Cluster {
+    pub(crate) fn all(&self) -> std::slice::Iter<'_, ProcessId> {
+        self.all.iter()
+    }
+
+    pub(crate) fn len(&self) -> usize {
+        self.all.len()
+    }
 }
