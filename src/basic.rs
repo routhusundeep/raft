@@ -5,5 +5,5 @@ pub type Index = usize;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Entry {
-    Normal(Term, Index, Bytes),
+    Normal(Index, Term, Bytes),
 }

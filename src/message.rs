@@ -182,7 +182,7 @@ impl Into<proto::Entry> for Entry {
     fn into(self) -> proto::Entry {
         let mut def = proto::Entry::default();
         match self {
-            Entry::Normal(term, index, bytes) => {
+            Entry::Normal(index, term, bytes) => {
                 let mut def = proto::Entry::default();
                 def.term = term.try_into().unwrap();
                 def.index = index.try_into().unwrap();
@@ -198,8 +198,8 @@ impl From<proto::Entry> for Entry {
         match value.type_.enum_value() {
             Ok(v) => match v {
                 proto::EntryType::Normal => Entry::Normal(
-                    value.term.try_into().unwrap(),
                     value.index.try_into().unwrap(),
+                    value.term.try_into().unwrap(),
                     value.bytes.into(),
                 ),
             },
@@ -234,7 +234,7 @@ impl From<proto::ProcessId> for ProcessId {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct WireMessage {
     pub from: ProcessId,
     pub to: ProcessId,

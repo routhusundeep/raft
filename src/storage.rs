@@ -5,7 +5,7 @@ use crate::{
     cluster::ProcessId,
 };
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct LogEntry {
     pub term: Term,
     pub index: Index,
@@ -27,10 +27,26 @@ pub trait Storage {
     fn update(&mut self, from: Index, v: Vec<LogEntry>);
 }
 
-struct MemStorage {
+pub struct MemStorage {
     term: Term,
     vote: Option<ProcessId>,
     log: Vec<LogEntry>,
+}
+impl MemStorage {
+    pub(crate) fn new() -> MemStorage {
+        MemStorage {
+            term: 0,
+            vote: None,
+            log: vec![
+                // initializing with an empty entry
+                LogEntry {
+                    term: 0,
+                    index: 0,
+                    bytes: Bytes::new(),
+                },
+            ],
+        }
+    }
 }
 
 impl Storage for MemStorage {
@@ -51,7 +67,7 @@ impl Storage for MemStorage {
     }
 
     fn last_index(&self) -> Index {
-        self.log.len()
+        self.log.len() - 1
     }
 
     fn read(&self, from: Index, to: Index) -> Vec<LogEntry> {

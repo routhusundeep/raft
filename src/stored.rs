@@ -9,6 +9,10 @@ pub struct StoredState<S: Storage> {
 }
 
 impl<S: Storage> StoredState<S> {
+    pub fn new(storage: S) -> StoredState<S> {
+        StoredState { storage: storage }
+    }
+
     pub fn insert_after(&mut self, index: Index, entries: Vec<LogEntry>) {
         self.storage.update(index, entries);
     }
@@ -26,7 +30,14 @@ impl<S: Storage> StoredState<S> {
     }
 
     pub fn last_index_and_term(&self) -> (Index, Term) {
-        (self.storage.last_index(), self.storage.get_term())
+        let last_index = self.storage.last_index();
+        (
+            last_index,
+            self.storage
+                .at(last_index)
+                .map(|e| e.term)
+                .expect("will be present"),
+        )
     }
 
     pub fn vote_for(&mut self, id: ProcessId) {

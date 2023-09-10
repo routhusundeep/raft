@@ -1,4 +1,8 @@
-use std::{fmt::Display, net::IpAddr};
+use std::{
+    fmt::Display,
+    net::IpAddr,
+    sync::{Arc, Mutex},
+};
 
 #[derive(Eq, Ord, PartialEq, PartialOrd, Hash, Clone, Debug)]
 pub struct ProcessId {
@@ -33,15 +37,38 @@ impl ProcessId {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Cluster {
-    all: Vec<ProcessId>,
+    all: Arc<Mutex<Vec<ProcessId>>>,
 }
 impl Cluster {
-    pub(crate) fn all(&self) -> std::slice::Iter<'_, ProcessId> {
-        self.all.iter()
+    pub(crate) fn all(&self) -> Vec<ProcessId> {
+        let g = self.all.lock().unwrap();
+        let mut v = vec![];
+        for i in g.iter() {
+            v.push(i.clone());
+        }
+        v
     }
 
     pub(crate) fn len(&self) -> usize {
-        self.all.len()
+        self.all.lock().unwrap().len()
+    }
+
+    pub(crate) fn new() -> Cluster {
+        Cluster {
+            all: Arc::new(Mutex::new(vec![])),
+        }
+    }
+
+    pub(crate) fn add(&mut self, id: ProcessId) {
+        self.all.lock().unwrap().push(id)
+    }
+
+    pub(crate) fn add_all(&self, p: Vec<ProcessId>) {
+        let mut g = self.all.lock().unwrap();
+        for i in p {
+            g.push(i);
+        }
     }
 }
