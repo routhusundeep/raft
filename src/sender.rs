@@ -5,9 +5,10 @@ use zmq::Context;
 
 use crate::{
     cluster::ProcessId,
-    message::{Message, WireMessage, ReceivedMessage},
+    message::{Message, ReceivedMessage, WireMessage},
 };
 
+#[derive(Eq, PartialEq, Debug)]
 pub enum Error {
     Closed,
     Unable(String),
@@ -28,8 +29,14 @@ pub trait Sender {
     fn send(&self, from: ProcessId, to: ProcessId, m: Message) -> Result<(), Error>;
 }
 
-struct ZMQSender {
+pub struct ZMQSender {
     context: Context,
+}
+
+impl ZMQSender {
+    pub fn new(context: Context) -> Self {
+        Self { context: context }
+    }
 }
 
 impl Sender for ZMQSender {
@@ -51,7 +58,10 @@ impl Sender for ZMQSender {
 
 impl Sender for crossbeam::channel::Sender<ReceivedMessage> {
     fn send(&self, from: ProcessId, to: ProcessId, m: Message) -> Result<(), Error> {
-        match (&*self).send(ReceivedMessage{from: from, message: m}) {
+        match (&*self).send(ReceivedMessage {
+            from: from,
+            message: m,
+        }) {
             Ok(()) => Ok(()),
             Err(e) => Err(e.into()),
         }

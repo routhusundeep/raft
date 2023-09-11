@@ -33,7 +33,7 @@ pub struct MemStorage {
     log: Vec<LogEntry>,
 }
 impl MemStorage {
-    pub(crate) fn new() -> MemStorage {
+    pub fn new() -> MemStorage {
         MemStorage {
             term: 0,
             vote: None,

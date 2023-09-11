@@ -41,6 +41,7 @@ impl ProcessId {
 pub struct Cluster {
     all: Arc<Mutex<Vec<ProcessId>>>,
 }
+
 impl Cluster {
     pub(crate) fn all(&self) -> Vec<ProcessId> {
         let g = self.all.lock().unwrap();
@@ -55,17 +56,17 @@ impl Cluster {
         self.all.lock().unwrap().len()
     }
 
-    pub(crate) fn new() -> Cluster {
+    pub fn new() -> Cluster {
         Cluster {
             all: Arc::new(Mutex::new(vec![])),
         }
     }
 
-    pub(crate) fn add(&mut self, id: ProcessId) {
+    pub fn add(&mut self, id: ProcessId) {
         self.all.lock().unwrap().push(id)
     }
 
-    pub(crate) fn add_all(&self, p: Vec<ProcessId>) {
+    pub fn add_all(&self, p: Vec<ProcessId>) {
         let mut g = self.all.lock().unwrap();
         for i in p {
             g.push(i);

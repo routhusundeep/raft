@@ -3,6 +3,7 @@ use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
     ops::Range,
+    process::Command,
     time::{Duration, Instant},
 };
 
@@ -13,6 +14,7 @@ use rand::Rng;
 use crate::{
     basic::{Entry, Index, Term},
     cluster::{Cluster, ProcessId},
+    committer::Committer,
     consts::{ELECTION_INTERVAL_RANGE, HEARTBEAT_INTERVAL},
     message::Message,
     sender::Sender,
@@ -27,13 +29,15 @@ pub enum RaftType {
     Candidate,
 }
 
-pub struct Raft<S: Storage, E: Sender> {
+pub struct Raft<S: Storage, E: Sender, C:Committer> {
     t: RaftType,
     id: ProcessId,
     cluster: Cluster,
 
     sender: E,
     store: StoredState<S>,
+
+    commiter: C,
 
     commit_index: Index,
     last_applied: Index,
@@ -55,13 +59,14 @@ pub struct Raft<S: Storage, E: Sender> {
     heart_beat_time_out: Instant, // next time after which empty appends will be sent
 }
 
-impl<S: Storage, E: Sender> Raft<S, E> {
-    pub fn new_with_defaults(id: ProcessId, cluster: Cluster, storage: S, sender: E) -> Raft<S, E> {
+impl<S: Storage, E: Sender, C:Committer> Raft<S, E, C> {
+    pub fn new_with_defaults(id: ProcessId, cluster: Cluster, storage: S, sender: E, committer: C) -> Raft<S, E, C> {
         Self::new(
             id,
             cluster,
             storage,
             sender,
+            committer,
             ELECTION_INTERVAL_RANGE.clone(),
             HEARTBEAT_INTERVAL,
         )
@@ -72,14 +77,16 @@ impl<S: Storage, E: Sender> Raft<S, E> {
         cluster: Cluster,
         storage: S,
         sender: E,
+        committer: C,
         election_time_out_range: Range<u64>,
         heart_beat_interval: u64,
-    ) -> Raft<S, E> {
+    ) -> Raft<S, E, C> {
         Raft {
             t: RaftType::Follower,
             id: id,
             cluster: cluster,
             sender: sender,
+            commiter: committer,
             store: StoredState::new(storage),
             commit_index: 0,
             last_applied: 0,
@@ -98,6 +105,26 @@ impl<S: Storage, E: Sender> Raft<S, E> {
             heart_beat_interval: heart_beat_interval,
             heart_beat_time_out: Instant::now(),
         }
+    }
+
+    pub fn id(&self) -> &ProcessId {
+        &self.id
+    }
+
+    pub fn raft_type(&self) -> &RaftType {
+        &self.t
+    }
+
+    pub fn leader_id(&self) -> Option<ProcessId> {
+        self.leader_id.clone()
+    }
+
+    pub fn current_term(&self) -> Term {
+        self.store.current_term()
+    }
+
+    pub fn commit_index(&self) -> Index {
+        self.commit_index
     }
 
     pub fn process(&mut self, from: ProcessId, m: Message) {
@@ -541,7 +568,8 @@ mod tests {
     fn new_raft(id: ProcessId, cluster: Cluster) -> Raft<MemStorage, MockSender> {
         let s = MemStorage::new();
         let e = MockSender::new();
-        let r = Raft::new_with_defaults(id.clone(), cluster, s, e);
+        let c = Committer::new();
+        let r = Raft::new_with_defaults(id.clone(), cluster, s, e, c);
         r
     }
 
