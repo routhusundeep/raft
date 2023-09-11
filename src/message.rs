@@ -114,6 +114,7 @@ impl Into<proto::Message> for Message {
             }
             Message::Command(client, c) => {
                 let mut m = proto::Message::default();
+                m.type_ = proto::MessageType::Command.into();
                 m.command = MessageField::some(c.into());
                 m.client = MessageField::some(client.into());
                 m
@@ -206,7 +207,6 @@ impl Into<proto::Entry> for Entry {
 
         match self.t {
             EntryType::Normal(bytes) => {
-                let mut def = proto::Entry::default();
                 def.type_ = proto::EntryType::Normal.into();
                 def.bytes = bytes.into();
                 def
@@ -297,11 +297,14 @@ impl From<proto::WireMessage> for WireMessage {
 
 #[cfg(test)]
 mod tests {
-    use std::net::Ipv4Addr;
+    use std::{net::Ipv4Addr, vec};
 
     use protobuf::Message as ProtoMessage;
 
-    use crate::cluster::ProcessId;
+    use crate::{
+        basic::{Command, Entry},
+        cluster::ProcessId,
+    };
 
     use super::Message;
 
@@ -311,15 +314,17 @@ mod tests {
 
         check_serde(Message::Empty);
         check_serde(Message::Terminate);
-        check_serde(Message::Command(
-            pid,
-            Command::Normal("command".to_string().into()),
+        check_serde(Message::Command(pid, Command::Normal("command".into())));
+        check_serde(Message::AppendEntries(
+            1,
+            2,
+            3,
+            vec![Entry::normal(1, 2, "command".into())],
+            4,
         ));
-        check_serde(Message::Empty);
-        check_serde(Message::Empty);
-        check_serde(Message::Empty);
-        check_serde(Message::Empty);
-        check_serde(Message::Empty);
+        check_serde(Message::AppendEntriesResponse(1, 2, true));
+        check_serde(Message::RequestVote(1, 2, 3));
+        check_serde(Message::RequestVoteResponse(1, true));
     }
 
     fn check_serde(message: Message) {
