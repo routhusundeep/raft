@@ -417,13 +417,10 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
             return;
         }
 
+        let last_match = self.store.at(last_index).map(|e| e.term == last_term);
         // last_index and last_term should be same as leader
         let valid_previous_log = last_index == 0 // first step
-            || self
-                .store
-                .at(last_index)
-                .map(|e| e.term != last_term)
-                .unwrap_or(true);
+            || last_match.unwrap_or(false);
         if !valid_previous_log {
             self.respond_append(from.clone(), false);
             return;
