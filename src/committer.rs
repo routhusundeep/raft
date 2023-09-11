@@ -1,6 +1,7 @@
-use std::process::Command;
-
 use crossbeam::channel::{unbounded, Receiver, Sender};
+use log::info;
+
+use crate::basic::Command;
 
 pub trait Committer {
     fn apply(&self, c: Command);
@@ -8,9 +9,17 @@ pub trait Committer {
 
 pub struct CommitLogger {}
 
-impl CommitLogger{}
+impl CommitLogger {
+    pub(crate) fn new() -> CommitLogger {
+        CommitLogger {}
+    }
+}
 
-impl Committer for CommitLogger {}
+impl Committer for CommitLogger {
+    fn apply(&self, c: Command) {
+        info!("applying command: {}", c)
+    }
+}
 
 pub struct AsyncCommitter {
     sender: Sender<Command>,
@@ -25,6 +34,6 @@ impl AsyncCommitter {
 
 impl Committer for AsyncCommitter {
     fn apply(&self, c: Command) {
-        self.sender.send(c);
+        let _ = self.sender.send(c);
     }
 }

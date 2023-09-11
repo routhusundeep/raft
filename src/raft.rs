@@ -1,24 +1,22 @@
 use std::{
     cmp,
     collections::{HashMap, HashSet},
-    hash::Hash,
     ops::Range,
-    process::Command,
     time::{Duration, Instant},
 };
 
 use bytes::Bytes;
-use log::{debug, info};
+use log::debug;
 use rand::Rng;
 
 use crate::{
-    basic::{Entry, Index, Term},
+    basic::{Command, Entry, Index, Term},
     cluster::{Cluster, ProcessId},
     committer::Committer,
     consts::{ELECTION_INTERVAL_RANGE, HEARTBEAT_INTERVAL},
     message::Message,
     sender::Sender,
-    storage::{LogEntry, Storage},
+    storage::Storage,
     stored::StoredState,
 };
 
@@ -29,7 +27,7 @@ pub enum RaftType {
     Candidate,
 }
 
-pub struct Raft<S: Storage, E: Sender, C:Committer> {
+pub struct Raft<S: Storage, E: Sender, C: Committer> {
     t: RaftType,
     id: ProcessId,
     cluster: Cluster,
@@ -59,8 +57,14 @@ pub struct Raft<S: Storage, E: Sender, C:Committer> {
     heart_beat_time_out: Instant, // next time after which empty appends will be sent
 }
 
-impl<S: Storage, E: Sender, C:Committer> Raft<S, E, C> {
-    pub fn new_with_defaults(id: ProcessId, cluster: Cluster, storage: S, sender: E, committer: C) -> Raft<S, E, C> {
+impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
+    pub fn new_with_defaults(
+        id: ProcessId,
+        cluster: Cluster,
+        storage: S,
+        sender: E,
+        committer: C,
+    ) -> Raft<S, E, C> {
         Self::new(
             id,
             cluster,
@@ -133,17 +137,19 @@ impl<S: Storage, E: Sender, C:Committer> Raft<S, E, C> {
                 self.leader(from, m);
                 self.apply_remaining();
             }
-            RaftType::Follower => self.follower(from, m),
+            RaftType::Follower => {
+                self.follower(from, m);
+                self.apply_remaining();
+            }
             RaftType::Candidate => {
                 self.candidate(from, m);
-                self.apply_remaining();
             }
         }
     }
 
     fn move_commit_index(&mut self) {
         let last_index = self.store.last_index();
-        for idx in last_index..self.commit_index {
+        for idx in (self.commit_index + 1..=last_index).rev() {
             let mut quorum = self.cluster.len() / 2 + 1;
             for server in self.cluster.all() {
                 if quorum == 0 {
@@ -171,7 +177,11 @@ impl<S: Storage, E: Sender, C:Committer> Raft<S, E, C> {
     }
 
     fn apply(&self, index: Index) -> () {
-        info!("process:{} is applying index {}", self.id, index)
+        debug!("process:{} is applying index {}", self.id, index);
+        let e = self.store.at(index).expect("will be present");
+        match e.t {
+            crate::basic::EntryType::Normal(b) => self.commiter.apply(Command::Normal(b)),
+        }
     }
 
     fn leader(&mut self, from: ProcessId, m: Message) {
@@ -227,8 +237,10 @@ impl<S: Storage, E: Sender, C:Committer> Raft<S, E, C> {
                 }
             }
             Message::RequestVoteResponse(_, _) => ignore(m, self.id.clone()),
-            Message::Command(client, b) => {
-                self.store.append(b.clone());
+            Message::Command(client, c) => {
+                match c {
+                    crate::basic::Command::Normal(b) => self.store.append(b.clone()),
+                };
                 self.send_append_entries();
             }
         }
@@ -342,10 +354,7 @@ impl<S: Storage, E: Sender, C:Committer> Raft<S, E, C> {
                     self.store.current_term(),
                     last_index,
                     last_term,
-                    entries
-                        .into_iter()
-                        .map(|e| Entry::Normal(e.index, e.term, e.bytes))
-                        .collect(),
+                    entries,
                     self.commit_index,
                 ),
             );
@@ -421,19 +430,7 @@ impl<S: Storage, E: Sender, C:Committer> Raft<S, E, C> {
         }
 
         // persist all entries in the log
-        self.store.insert_after(
-            last_index + 1,
-            entries
-                .into_iter()
-                .map(|e| match e {
-                    Entry::Normal(index, term, bytes) => LogEntry {
-                        index: index,
-                        term: term,
-                        bytes: bytes,
-                    },
-                })
-                .collect(),
-        );
+        self.store.insert_after(last_index + 1, entries);
 
         // if leaders commit index is greater than our commit index, then set our commit index to the minimum of last index or leaders
         if commit_index > self.commit_index {
@@ -522,10 +519,11 @@ mod tests {
     use crate::{
         basic::Entry,
         cluster::{Cluster, ProcessId},
+        committer::CommitLogger,
         message::{Message, WireMessage},
         raft::RaftType,
         sender::Sender,
-        storage::{LogEntry, MemStorage},
+        storage::MemStorage,
     };
 
     use super::Raft;
@@ -565,10 +563,10 @@ mod tests {
         ProcessId::new(std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 5555, i)
     }
 
-    fn new_raft(id: ProcessId, cluster: Cluster) -> Raft<MemStorage, MockSender> {
+    fn new_raft(id: ProcessId, cluster: Cluster) -> Raft<MemStorage, MockSender, CommitLogger> {
         let s = MemStorage::new();
         let e = MockSender::new();
-        let c = Committer::new();
+        let c = CommitLogger::new();
         let r = Raft::new_with_defaults(id.clone(), cluster, s, e, c);
         r
     }
@@ -639,8 +637,8 @@ mod tests {
                 0,
                 0,
                 vec![
-                    Entry::Normal(1, 1, Bytes::new()),
-                    Entry::Normal(2, 1, "command1".into()),
+                    Entry::normal(1, 1, Bytes::new()),
+                    Entry::normal(2, 1, "command1".into()),
                 ],
                 0,
             ),
@@ -656,28 +654,14 @@ mod tests {
             }],
         );
         assert_eq!(2, r.store.last_index());
-        assert_eq!(
-            Some(LogEntry {
-                term: 1,
-                index: 1,
-                bytes: Bytes::new()
-            }),
-            r.store.at(1)
-        );
-        assert_eq!(
-            Some(LogEntry {
-                term: 1,
-                index: 2,
-                bytes: "command1".into()
-            }),
-            r.store.at(2)
-        );
+        assert_eq!(Some(Entry::normal(1, 1, Bytes::new())), r.store.at(1));
+        assert_eq!(Some(Entry::normal(2, 1, "command1".into())), r.store.at(2));
 
         // process the third request and do not apply it since it is stale
         r.sender.clear();
         r.process(
             p2.clone(),
-            Message::AppendEntries(0, 0, 0, vec![Entry::Normal(1, 1, Bytes::new())], 0),
+            Message::AppendEntries(0, 0, 0, vec![Entry::normal(1, 1, Bytes::new())], 0),
         );
         assert_sent_messages(
             r.sender.v.borrow().clone(),
@@ -729,7 +713,7 @@ mod tests {
         r.change_to_candidate();
         r.process(
             p2.clone(),
-            Message::AppendEntries(1, 0, 0, vec![Entry::Normal(2, 1, "command1".into())], 0),
+            Message::AppendEntries(1, 0, 0, vec![Entry::normal(2, 1, "command1".into())], 0),
         );
         assert_eq!(RaftType::Follower, r.t);
         assert_eq!(1, r.store.current_term());
@@ -797,7 +781,7 @@ mod tests {
                         1,
                         0,
                         0,
-                        vec![Entry::Normal(0, 1, Bytes::new())],
+                        vec![Entry::normal(0, 1, Bytes::new())],
                         0,
                     ),
                 },
@@ -808,7 +792,7 @@ mod tests {
                         1,
                         0,
                         0,
-                        vec![Entry::Normal(0, 1, Bytes::new())],
+                        vec![Entry::normal(0, 1, Bytes::new())],
                         0,
                     ),
                 },
@@ -824,7 +808,10 @@ mod tests {
         r.change_to_candidate();
         r.change_to_leader();
         r.sender.clear();
-        r.process(p1.clone(), Message::Command(p2.clone(), "command".into()));
+        r.process(
+            p1.clone(),
+            Message::Command(p2.clone(), "command".to_string().into()),
+        );
         assert_sent_messages(
             r.sender.v.borrow().clone(),
             vec![
@@ -836,8 +823,8 @@ mod tests {
                         0,
                         0,
                         vec![
-                            Entry::Normal(0, 1, "".into()),
-                            Entry::Normal(1, 1, "command".into()),
+                            Entry::normal(0, 1, "".into()),
+                            Entry::normal(1, 1, "command".into()),
                         ],
                         0,
                     ),
@@ -850,8 +837,8 @@ mod tests {
                         0,
                         0,
                         vec![
-                            Entry::Normal(0, 1, "".into()),
-                            Entry::Normal(1, 1, "command".into()),
+                            Entry::normal(0, 1, "".into()),
+                            Entry::normal(1, 1, "command".into()),
                         ],
                         0,
                     ),
@@ -880,7 +867,7 @@ mod tests {
                         1,
                         0,
                         0,
-                        vec![Entry::Normal(0, 1, Bytes::new())],
+                        vec![Entry::normal(0, 1, Bytes::new())],
                         0,
                     ),
                 },
@@ -891,7 +878,7 @@ mod tests {
                         1,
                         0,
                         0,
-                        vec![Entry::Normal(0, 1, Bytes::new())],
+                        vec![Entry::normal(0, 1, Bytes::new())],
                         0,
                     ),
                 },

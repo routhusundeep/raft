@@ -1,7 +1,7 @@
 use crate::{
-    basic::{Index, Term},
+    basic::{Entry, Index, Term},
     cluster::ProcessId,
-    storage::{LogEntry, Storage},
+    storage::Storage,
 };
 
 pub struct StoredState<S: Storage> {
@@ -13,11 +13,11 @@ impl<S: Storage> StoredState<S> {
         StoredState { storage: storage }
     }
 
-    pub fn insert_after(&mut self, index: Index, entries: Vec<LogEntry>) {
+    pub fn insert_after(&mut self, index: Index, entries: Vec<Entry>) {
         self.storage.update(index, entries);
     }
 
-    pub fn at(&self, index: Index) -> std::option::Option<LogEntry> {
+    pub fn at(&self, index: Index) -> std::option::Option<Entry> {
         self.storage.at(index)
     }
 
@@ -66,7 +66,7 @@ impl<S: Storage> StoredState<S> {
         self.storage.set_vote(None)
     }
 
-    pub fn entries_from(&self, index: Index) -> Vec<LogEntry> {
+    pub fn entries_from(&self, index: Index) -> Vec<Entry> {
         self.storage.read_from(index)
     }
 }

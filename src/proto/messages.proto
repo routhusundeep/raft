@@ -24,7 +24,7 @@ message Message {
   repeated Entry entries = 5;
   uint64 commitIndex = 6;
   bool success = 7; // used for voted or append success
-  bytes command = 8;
+  ClientCommand command = 8;
   ProcessId client = 9;
 }
 
@@ -46,4 +46,9 @@ message Entry {
   uint64 term = 2;
   uint64 index = 3;
   bytes bytes = 4;
+}
+
+message ClientCommand {
+  EntryType type = 1;
+  bytes bytes = 2;
 }

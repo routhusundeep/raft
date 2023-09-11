@@ -3,6 +3,7 @@ use log::{debug, info};
 
 use crate::{
     cluster::ProcessId,
+    committer::Committer,
     message::{Message, ReceivedMessage, WireMessage},
     raft::Raft,
     sender::Sender,
@@ -15,14 +16,14 @@ enum Options {
     Forever,
 }
 
-pub struct Runner<S: Storage, E: Sender> {
+pub struct Runner<S: Storage, E: Sender, C: Committer> {
     pid: ProcessId,
     r: Receiver<ReceivedMessage>,
-    raft: Raft<S, E>,
+    raft: Raft<S, E, C>,
 }
 
-impl<S: Storage, E: Sender> Runner<S, E> {
-    pub fn new(r: Receiver<ReceivedMessage>, raft: Raft<S, E>) -> Self {
+impl<S: Storage, E: Sender, C: Committer> Runner<S, E, C> {
+    pub fn new(r: Receiver<ReceivedMessage>, raft: Raft<S, E, C>) -> Self {
         Self {
             pid: raft.id().clone(),
             r: r,
@@ -30,7 +31,7 @@ impl<S: Storage, E: Sender> Runner<S, E> {
         }
     }
 
-    pub fn raft(&self) -> &Raft<S, E> {
+    pub fn raft(&self) -> &Raft<S, E, C> {
         &self.raft
     }
 
@@ -60,7 +61,7 @@ impl<S: Storage, E: Sender> Runner<S, E> {
         self.run(Options::Forever)
     }
 
-    pub fn empty_queue(&mut self) {
+    pub fn run_pending(&mut self) {
         self.run(Options::TillEmpty)
     }
 

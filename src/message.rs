@@ -4,7 +4,7 @@ use bytes::Bytes;
 use protobuf::MessageField;
 
 use crate::{
-    basic::{Entry, Index, Term},
+    basic::{Command, Entry, EntryType, Index, Term},
     cluster::ProcessId,
     proto::messages as proto,
 };
@@ -19,7 +19,7 @@ pub struct ReceivedMessage {
 pub enum Message {
     Empty,
     Terminate,
-    Command(ProcessId, Bytes),
+    Command(ProcessId, Command),
     AppendEntries(
         Term,       // leaders term
         Index,      // index of the previous log immediately preceeding the new one
@@ -61,12 +61,7 @@ impl Display for Message {
             Message::RequestVoteResponse(term, granted) => {
                 write!(f, "RequestVoteResponse ({}, {})", term, granted)
             }
-            Message::Command(client, b) => write!(
-                f,
-                "Command ({}, {})",
-                client,
-                String::from_utf8(b.to_vec()).unwrap_or("not valid UTF-8".into())
-            ),
+            Message::Command(client, c) => write!(f, "Command ({}, {})", client, c),
         }
     }
 }
@@ -119,7 +114,7 @@ impl Into<proto::Message> for Message {
             }
             Message::Command(client, c) => {
                 let mut m = proto::Message::default();
-                m.command = c.into();
+                m.command = MessageField::some(c.into());
                 m.client = MessageField::some(client.into());
                 m
             }
@@ -170,7 +165,7 @@ impl From<proto::Message> for Message {
                     Message::RequestVoteResponse(value.term.try_into().unwrap(), value.success)
                 }
                 proto::MessageType::Command => {
-                    Message::Command(value.client.unwrap().into(), value.command.into())
+                    Message::Command(value.client.unwrap().into(), value.command.unwrap().into())
                 }
             },
             Err(_) => unreachable!("should always be present"),
@@ -178,14 +173,41 @@ impl From<proto::Message> for Message {
     }
 }
 
+impl Into<proto::ClientCommand> for Command {
+    fn into(self) -> proto::ClientCommand {
+        let mut def = proto::Entry::default();
+        match self {
+            Command::Normal(b) => {
+                let mut def = proto::ClientCommand::default();
+                def.bytes = b.into();
+                def.type_ = proto::EntryType::Normal.into();
+                def
+            }
+        }
+    }
+}
+
+impl From<proto::ClientCommand> for Command {
+    fn from(value: proto::ClientCommand) -> Self {
+        match value.type_.enum_value() {
+            Ok(v) => match v {
+                proto::EntryType::Normal => Command::Normal(value.bytes.into()),
+            },
+            Err(_) => panic!("not possible"),
+        }
+    }
+}
+
 impl Into<proto::Entry> for Entry {
     fn into(self) -> proto::Entry {
         let mut def = proto::Entry::default();
-        match self {
-            Entry::Normal(index, term, bytes) => {
+        def.term = self.term.try_into().unwrap();
+        def.index = self.index.try_into().unwrap();
+
+        match self.t {
+            EntryType::Normal(bytes) => {
                 let mut def = proto::Entry::default();
-                def.term = term.try_into().unwrap();
-                def.index = index.try_into().unwrap();
+                def.type_ = proto::EntryType::Normal.into();
                 def.bytes = bytes.into();
                 def
             }
@@ -195,15 +217,17 @@ impl Into<proto::Entry> for Entry {
 
 impl From<proto::Entry> for Entry {
     fn from(value: proto::Entry) -> Self {
-        match value.type_.enum_value() {
+        let t = match value.type_.enum_value() {
             Ok(v) => match v {
-                proto::EntryType::Normal => Entry::Normal(
-                    value.index.try_into().unwrap(),
-                    value.term.try_into().unwrap(),
-                    value.bytes.into(),
-                ),
+                proto::EntryType::Normal => EntryType::Normal(value.bytes.into()),
             },
             Err(_) => panic!("not possible"),
+        };
+
+        Entry {
+            index: value.index.try_into().unwrap(),
+            term: value.term.try_into().unwrap(),
+            t: t,
         }
     }
 }
@@ -268,5 +292,41 @@ impl From<proto::WireMessage> for WireMessage {
             from: ProcessId::from(value.from.unwrap()),
             message: Message::from(value.message.unwrap()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::net::Ipv4Addr;
+
+    use protobuf::Message as ProtoMessage;
+
+    use crate::cluster::ProcessId;
+
+    use super::Message;
+
+    #[test]
+    fn serde() {
+        let pid = ProcessId::new(std::net::IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 5555, 1);
+
+        check_serde(Message::Empty);
+        check_serde(Message::Terminate);
+        check_serde(Message::Command(
+            pid,
+            Command::Normal("command".to_string().into()),
+        ));
+        check_serde(Message::Empty);
+        check_serde(Message::Empty);
+        check_serde(Message::Empty);
+        check_serde(Message::Empty);
+        check_serde(Message::Empty);
+    }
+
+    fn check_serde(message: Message) {
+        let serialize: crate::proto::messages::Message = message.clone().into();
+        let bytes = serialize.write_to_bytes().expect("valid serialize");
+        let deserialize =
+            crate::proto::messages::Message::parse_from_bytes(&bytes).expect("valid deserialize");
+        assert_eq!(message, deserialize.into())
     }
 }

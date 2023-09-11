@@ -1,16 +1,9 @@
 use bytes::Bytes;
 
 use crate::{
-    basic::{Index, Term},
+    basic::{Entry, EntryType, Index, Term},
     cluster::ProcessId,
 };
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct LogEntry {
-    pub term: Term,
-    pub index: Index,
-    pub bytes: Bytes,
-}
 
 pub trait Storage {
     fn get_vote(&self) -> Option<ProcessId>;
@@ -20,17 +13,17 @@ pub trait Storage {
     fn set_term(&mut self, t: Term);
 
     fn last_index(&self) -> Index;
-    fn read(&self, from: Index, to: Index) -> Vec<LogEntry>;
-    fn read_from(&self, from: Index) -> Vec<LogEntry>;
-    fn at(&self, idx: Index) -> Option<LogEntry>;
+    fn read(&self, from: Index, to: Index) -> Vec<Entry>;
+    fn read_from(&self, from: Index) -> Vec<Entry>;
+    fn at(&self, idx: Index) -> Option<Entry>;
     fn append(&mut self, term: Term, b: Bytes) -> Index;
-    fn update(&mut self, from: Index, v: Vec<LogEntry>);
+    fn update(&mut self, from: Index, v: Vec<Entry>);
 }
 
 pub struct MemStorage {
     term: Term,
     vote: Option<ProcessId>,
-    log: Vec<LogEntry>,
+    log: Vec<Entry>,
 }
 impl MemStorage {
     pub fn new() -> MemStorage {
@@ -39,10 +32,10 @@ impl MemStorage {
             vote: None,
             log: vec![
                 // initializing with an empty entry
-                LogEntry {
+                Entry {
                     term: 0,
                     index: 0,
-                    bytes: Bytes::new(),
+                    t: EntryType::Normal(Bytes::new()),
                 },
             ],
         }
@@ -70,30 +63,30 @@ impl Storage for MemStorage {
         self.log.len() - 1
     }
 
-    fn read(&self, from: Index, to: Index) -> Vec<LogEntry> {
+    fn read(&self, from: Index, to: Index) -> Vec<Entry> {
         self.log[from..to].to_vec()
     }
 
-    fn read_from(&self, from: Index) -> Vec<LogEntry> {
+    fn read_from(&self, from: Index) -> Vec<Entry> {
         self.log[from..].to_vec()
     }
 
-    fn at(&self, idx: Index) -> Option<LogEntry> {
+    fn at(&self, idx: Index) -> Option<Entry> {
         self.log.get(idx).map(|e| e.clone())
     }
 
     fn append(&mut self, term: Term, b: Bytes) -> Index {
         let idx = self.log.len() - 1;
-        let e = LogEntry {
-            term,
+        let e = Entry {
+            term: term,
             index: idx,
-            bytes: b,
+            t: EntryType::Normal(b),
         };
         self.log.push(e);
         idx
     }
 
-    fn update(&mut self, from: Index, v: Vec<LogEntry>) {
+    fn update(&mut self, from: Index, v: Vec<Entry>) {
         for i in from..from + v.len() {
             let e = v[i - from].clone();
             if i < self.log.len() {
