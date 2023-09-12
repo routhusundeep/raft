@@ -1,10 +1,12 @@
+use std::thread::{self, JoinHandle};
+
 use crossbeam::channel::Receiver;
 use log::{debug, info};
 
 use crate::{
     cluster::ProcessId,
     committer::Committer,
-    message::{Message, ReceivedMessage, WireMessage},
+    message::{Message, ReceivedMessage},
     raft::Raft,
     sender::Sender,
     storage::Storage,

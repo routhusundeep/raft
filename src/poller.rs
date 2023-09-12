@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{basic::Term, cluster::ProcessId, message::WireMessage, sender::Sender};
 use chashmap::CHashMap;
 use crossbeam::channel::{Receiver, TryRecvError};
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use protobuf::Message;
 use zmq::Socket;
 
@@ -39,6 +39,10 @@ where
             map: Arc::new(CHashMap::new()),
             terminator: terminator,
         }
+    }
+
+    pub fn addr(&self) -> String {
+        self.addr.clone()
     }
 
     pub fn add(&self, id: ProcessId, s: S) {
@@ -100,7 +104,7 @@ where
 
     fn handle(&self, m: WireMessage) -> () {
         let mclone = m.clone();
-        debug!("polled message {}", &m);
+        trace!("polled message {}", &m);
 
         self.map
             .get(&m.to)

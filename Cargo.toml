@@ -12,6 +12,10 @@ chashmap = "2.2.2"
 crossbeam = "0.8.2"
 bytes = "1"
 rand = "0.8"
+chrono = "0.4.30"
+
+[dev-dependencies]
+thread-priority = "0.13.1"
 
 [dependencies.protobuf]
 version = "3.2.0"

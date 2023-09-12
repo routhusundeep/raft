@@ -1,5 +1,6 @@
 pub mod basic;
 pub mod cluster;
+pub mod committer;
 pub mod consts;
 pub mod message;
 pub mod poller;
@@ -9,4 +10,4 @@ pub mod runner;
 pub mod sender;
 pub mod storage;
 mod stored;
-pub mod committer;
+pub mod util;

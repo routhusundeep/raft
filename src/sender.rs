@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+use log::trace;
 use protobuf::Message as pbm;
 use zmq::Context;
 
@@ -41,6 +42,7 @@ impl ZMQSender {
 
 impl Sender for ZMQSender {
     fn send(&self, from: ProcessId, to: ProcessId, m: Message) -> Result<(), Error> {
+        trace!("sending message - from:{}, to:{}, message:{}", from, to, m);
         let s = self.context.socket(zmq::PUSH).unwrap();
         assert!(s.connect(&to.addr()).is_ok());
         let p: crate::proto::messages::WireMessage = WireMessage {

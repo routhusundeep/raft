@@ -6,7 +6,7 @@ use std::{
 };
 
 use bytes::Bytes;
-use log::debug;
+use log::{debug, info};
 use rand::Rng;
 
 use crate::{
@@ -163,7 +163,12 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
             }
             if quorum == 0 {
                 self.commit_index = idx;
-                debug!("process:{}, commit index is set to {}", self.id, idx);
+                debug!(
+                    "Term:{} - Process:{} commit index is set to {}",
+                    self.current_term(),
+                    self.id,
+                    idx
+                );
                 break;
             }
         }
@@ -177,11 +182,16 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
     }
 
     fn apply(&self, index: Index) -> () {
-        debug!("process:{} is applying index {}", self.id, index);
         let e = self.store.at(index).expect("will be present");
-        match e.t {
-            crate::basic::EntryType::Normal(b) => self.commiter.apply(Command::Normal(b)),
-        }
+        let c: Command = match e.t {
+            crate::basic::EntryType::Normal(b) => Command::Normal(b),
+        };
+
+        info!(
+            "Term:{} - Process:{} applying command:{}",
+            self.id, index, c
+        );
+        self.commiter.apply(c);
     }
 
     fn leader(&mut self, from: ProcessId, m: Message) {
@@ -284,7 +294,7 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
             }
             Message::AppendEntriesResponse(_, _, _) => ignore(m, self.id.clone()),
             Message::Terminate => ignore(m, self.id.clone()),
-            Message::Command(_, _) => todo!(),
+            Message::Command(client, c) => self.route_command_to_leader(client, c),
         }
     }
 
@@ -300,18 +310,30 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
             Message::RequestVote(term, last_index, last_term) => {
                 self.handle_request_vote(term, from, last_term, last_index);
             }
+            Message::Command(client, c) => self.route_command_to_leader(client, c),
             _ => ignore(m, self.id.clone()),
         }
     }
 
     fn change_to_candidate(&mut self) {
+        info!(
+            "Term:{} - Process:{} became a candidate",
+            self.store.current_term(),
+            self.id,
+        );
+
         self.t = RaftType::Candidate;
-        self.votes.clear();
-        self.store.increase_term();
+        self.leader_id = None;
         self.start_election();
     }
 
     fn change_to_leader(&mut self) {
+        info!(
+            "Term:{} - Process:{} became the leader",
+            self.store.current_term(),
+            self.id
+        );
+
         self.t = RaftType::Leader;
         self.set_leader(&self.id.clone());
 
@@ -325,7 +347,15 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
     }
 
     fn change_to_follower(&mut self) {
-        self.t = RaftType::Follower;
+        if self.t != RaftType::Follower {
+            info!(
+                "Term:{} - Process:{} became a follower",
+                self.store.current_term(),
+                self.id
+            );
+
+            self.t = RaftType::Follower;
+        }
     }
 
     fn check_term_and_change_to_follower(&mut self, term: Term) -> bool {
@@ -362,6 +392,13 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
     }
 
     fn start_election(&mut self) {
+        info!(
+            "Term:{} - Process:{} is initiating election",
+            self.store.current_term(),
+            self.id
+        );
+
+        self.store.increase_term();
         self.store.vote_for(self.id.clone());
         self.votes.clear();
         self.votes.insert(self.id.clone());
@@ -410,8 +447,8 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
 
         if term < self.store.current_term() {
             debug!(
-                "process:{} is dropping request from term:{} since it is a message from old leader",
-                self.id, term
+                "Term:{} - Process:{} is dropping request from term:{} since it is a message from old leader",
+                self.store.current_term(), self.id, term
             );
             self.respond_append(from.clone(), false);
             return;
@@ -448,8 +485,10 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
 
         if term < self.store.current_term() {
             debug!(
-                "process:{} not granting vote for lower term:{}",
-                self.id, term
+                "Term:{} - Process:{} not granting vote for lower term:{}",
+                self.store.current_term(),
+                self.id,
+                term
             );
             self.respond_vote(from, false);
             return;
@@ -466,6 +505,13 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
             self.respond_vote(from.clone(), false);
             return;
         }
+
+        info!(
+            "Term:{} - Process:{} granted vote for {}",
+            self.store.current_term(),
+            self.id,
+            from
+        );
 
         self.respond_vote(from.clone(), true);
         self.store.vote_for(from);
@@ -501,10 +547,26 @@ impl<S: Storage, E: Sender, C: Committer> Raft<S, E, C> {
     fn set_leader(&mut self, id: &ProcessId) {
         self.leader_id = Some(id.clone());
     }
+
+    fn route_command_to_leader(&self, client: ProcessId, c: Command) {
+        match &self.leader_id {
+            Some(leader) => {
+                let _ =
+                    self.sender
+                        .send(self.id.clone(), leader.clone(), Message::Command(client, c));
+            }
+            None => info!(
+                "Term:{} - Process:{} has no leader, so ignoring the command:{}",
+                self.store.current_term(),
+                self.id,
+                c
+            ),
+        }
+    }
 }
 
 fn ignore(m: Message, id: ProcessId) -> () {
-    debug!("process:{} is ignoring the message:{}", id, m)
+    info!("Process:{} is ignoring the message:{}", id, m)
 }
 
 #[cfg(test)]
@@ -722,7 +784,6 @@ mod tests {
         let mut r = new_raft(p1.clone(), cluster.clone());
 
         r.change_to_candidate();
-        r.start_election();
         r.process(p2.clone(), Message::Empty);
         assert_eq!(RaftType::Candidate, r.t);
         r.process(p2.clone(), Message::RequestVoteResponse(1, true));
@@ -736,7 +797,6 @@ mod tests {
         let mut r = new_raft(p1.clone(), cluster.clone());
 
         r.change_to_candidate();
-        r.start_election();
         r.sender.clear();
         thread::sleep(Duration::from_millis(r.election_time_out_range.end));
 
@@ -748,12 +808,12 @@ mod tests {
                 WireMessage {
                     from: p1.clone(),
                     to: p2.clone(),
-                    message: Message::RequestVote(1, 0, 0),
+                    message: Message::RequestVote(2, 0, 0),
                 },
                 WireMessage {
                     from: p1.clone(),
                     to: p3.clone(),
-                    message: Message::RequestVote(1, 0, 0),
+                    message: Message::RequestVote(2, 0, 0),
                 },
             ],
         );

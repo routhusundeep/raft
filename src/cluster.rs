@@ -1,6 +1,6 @@
 use std::{
     fmt::Display,
-    net::IpAddr,
+    net::{IpAddr, Ipv4Addr},
     sync::{Arc, Mutex},
 };
 
@@ -23,11 +23,11 @@ impl ProcessId {
 
 impl Display for ProcessId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "ProcessID(ip:{}, port:{}, id:{})",
-            self.ip, self.port, self.id
-        )
+        if self.ip == IpAddr::V4(Ipv4Addr::LOCALHOST) {
+            return write!(f, "Local:{}", self.id);
+        } else {
+            write!(f, "ip:{}, port:{}, id:{}", self.ip, self.port, self.id)
+        }
     }
 }
 

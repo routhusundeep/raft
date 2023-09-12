@@ -1,6 +1,5 @@
 use std::{fmt::Display, vec};
 
-use bytes::Bytes;
 use protobuf::MessageField;
 
 use crate::{
@@ -41,7 +40,7 @@ impl Display for Message {
         match self {
             Message::Empty => write!(f, "None"),
             Message::Terminate => write!(f, "Terminate"),
-            Message::AppendEntries(term, prev_index, prev_term, entries, commit_index) => {
+            Message::AppendEntries(term, prev_index, prev_term, _, commit_index) => {
                 write!(
                     f,
                     "AppendEntries ({},  {}, {}, {})",
@@ -176,15 +175,14 @@ impl From<proto::Message> for Message {
 
 impl Into<proto::ClientCommand> for Command {
     fn into(self) -> proto::ClientCommand {
-        let mut def = proto::Entry::default();
+        let mut def = proto::ClientCommand::default();
         match self {
             Command::Normal(b) => {
-                let mut def = proto::ClientCommand::default();
                 def.bytes = b.into();
                 def.type_ = proto::EntryType::Normal.into();
-                def
             }
         }
+        def
     }
 }
 
