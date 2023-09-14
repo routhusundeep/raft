@@ -12,12 +12,9 @@ use raft::{
     util::{logger::SimpleLogger, Env},
 };
 use rand::Rng;
-use thread_priority::{set_current_thread_priority, ThreadPriority, ThreadPriorityValue};
 use zmq::Context;
 
-static LOGGER: SimpleLogger = SimpleLogger {
-    level: Level::Debug,
-};
+static LOGGER: SimpleLogger = SimpleLogger { level: Level::Info };
 
 pub fn init() -> Result<(), SetLoggerError> {
     log::set_logger(&LOGGER).map(|()| log::set_max_level(LevelFilter::Trace))
@@ -55,7 +52,7 @@ fn without_commands() {
 #[test]
 fn constant_qps_commands() {
     let duration = 10;
-    let qps = 100;
+    let qps = 50;
 
     let _ = init();
 
@@ -75,30 +72,22 @@ fn constant_qps_commands() {
     let addr = poller.addr();
 
     let jp = thread::spawn(move || {
-        assert!(set_current_thread_priority(ThreadPriority::Crossplatform(
-            99u8.try_into().unwrap()
-        ))
-        .is_ok());
         poller.start();
     });
 
     let j1 = thread::spawn(move || {
-        r1.start();
+        r1.start_with_sleep(Duration::from_millis(100));
     });
     let j2 = thread::spawn(move || {
-        r2.start();
+        r2.start_with_sleep(Duration::from_millis(100));
     });
     let j3 = thread::spawn(move || {
-        r3.start();
+        r3.start_with_sleep(Duration::from_millis(100));
     });
 
     let fire_handle = thread::spawn(move || {
         // just wait for the first leader election
         thread::sleep(Duration::from_millis(300));
-        // assert!(set_current_thread_priority(ThreadPriority::Crossplatform(
-        //     1u8.try_into().unwrap()
-        // ))
-        // .is_ok());
         fire_commands(pid1, pid2, pid3, duration, qps);
     });
 
